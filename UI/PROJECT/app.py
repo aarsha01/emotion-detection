@@ -12,7 +12,7 @@ from twilio.rest import Client
 
 app = Flask(__name__)
 CORS(app)
-app.config['SECRET_KEY'] = 'a3f9b2c5d8e7a1f4c6d9e0b2a5d7c3f1' 
+# app.config['SECRET_KEY'] = 'a3f9b2c5d8e7a1f4c6d9e0b2a5d7c3f1' 
 
 # Configure the database
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
@@ -36,8 +36,8 @@ geolocator = Nominatim(user_agent="women_safety_app")
 
 # Twilio credentials (replace with your own)
 TWILIO_PHONE = '+12317512671'  # Your Twilio phone number
-TWILIO_ACCOUNT_SID = 'AC43e2d9954c7ca8333a3715e8f0dac820'  # Your Twilio Account SID
-TWILIO_AUTH_TOKEN = '35696f6f7e6daeb698300c3d009c5e29'   # Your Twilio Auth Token
+# TWILIO_ACCOUNT_SID = 'AC43e2d9954c7ca8333a3715e8f0dac820'  # Your Twilio Account SID
+# TWILIO_AUTH_TOKEN = '35696f6f7e6daeb698300c3d009c5e29'   # Your Twilio Auth Token
 
 # Predefined emergency contacts (use valid phone numbers)
 EMERGENCY_CONTACTS = ['+919037448078', '+918137042277']  # Example phone numbers
@@ -255,7 +255,7 @@ def send_location():
     try:
         user_id = session.get("user_id")
         if not user_id:
-            return redirect(url_for("login"))
+             return jsonify({"error": "User not logged in"}), 401 
         # Fetch user details from the database
         user = User.query.get(session["user_id"])
         if not user:

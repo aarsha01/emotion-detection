@@ -70,10 +70,14 @@ function sendLocationToServer(position) {
         },
         body: JSON.stringify({ latitude: latitude, longitude: longitude })
     })
-    .then(response =>{
-        response.json()
-       
-    } )
+    .then(response => {
+        if (response.status === 401) {
+            console.error("User not logged in!");
+            alert("You must be logged in to send location.");
+            return;
+        }
+        return response.json();
+    })
     .then(data => {
         console.log('Location sent successfully:', data);
 
