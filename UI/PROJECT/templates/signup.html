@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Her_Shield - Sign Up</title>
+        <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&family=Roboto:wght@300&display=swap" rel="stylesheet">
+        <style>
+            body {
+                font-family: 'Roboto', sans-serif;
+                background-color: #ffeef7;
+                color: #d63384;
+                margin: 0;
+                padding: 0;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                height: 100vh;
+            }
+
+            .container {
+                background-color: #fff;
+                border-radius: 16px;
+                box-shadow: 0 8px 20px rgba(214, 51, 132, 0.3);
+                padding: 20px;
+                max-width: 750px;
+                width: 100%;
+                text-align: center;
+                border: 2px solid #ffd6e8;
+            }
+
+            h1 {
+                font-family: 'Poppins', sans-serif;
+                color: #ff6f91;
+                font-size: 2em;
+                font-weight: 600;
+                margin-bottom: 10px;
+            }
+
+            .form-group {
+                margin-bottom: 15px;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                font-size: 0.9rem;
+            }
+
+            .form-group label {
+                flex-basis: 30%;
+                text-align: left;
+                margin-right: 5px;
+                font-family: 'Poppins', sans-serif;
+                font-weight: 400;
+                color: #333;
+            }
+
+            .form-group input {
+                flex-basis: 55%;
+                padding: 8px;
+                border: 1px solid #f5a3c2;
+                border-radius: 8px;
+                font-family: 'Roboto', sans-serif;
+                font-size: 0.9rem;
+                background-color: #fff4fb;
+                color: #333;
+            }
+
+            button {
+                width: 25%;
+                height: 35px;
+                background-color: #ff6f91;
+                color: white;
+                border: none;
+                border-radius: 15px;
+                font-family: 'Poppins', sans-serif;
+                font-size: 0.9rem;
+                font-weight: 600;
+                cursor: pointer;
+                box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+                transition: background-color 0.3s;
+                margin-top: 15px;
+            }
+
+            button:hover {
+                background-color: #ff2f6d;
+            }
+
+            .signup-link {
+                margin-top: 10px;
+            }
+
+            .signup-link a {
+                text-decoration: none;
+                font-family: 'Poppins', sans-serif;
+                color: #ff6f91;
+                font-weight: bold;
+            }
+
+            .signup-link a:hover {
+                color: #ff2f6d;
+            }
+        </style>
+    </head>
+
+    <body>
+        <div class="container">
+            <h1>Sign-Up to Her_Shield</h1>
+            {% if error_message %}
+            <div class="alert">{{ error_message }}</div>
+             {% endif %}
+            <form action="/signup" method="POST">
+                <div class="form-group">
+                    <label for="username">Name</label>
+                    <input type="text" id="username" name="username" placeholder="Enter your name" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="mail">E-mail</label>
+                    <input type="email" id="mail" name="mail" placeholder="Enter your email" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="phno">Contact No</label>
+                    <input type="tel" id="phno" name="phno" placeholder="Enter your contact number" pattern="\d{10}" maxlength="10" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="emergency1">Emergency Contact 1</label>
+                    <input type="tel" id="emergency1" name="emergency1" placeholder="Emergency contact 1" pattern="\d{10}" maxlength="10" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="emergency2">Emergency Contact 2</label>
+                    <input type="tel" id="emergency2" name="emergency2" placeholder="Emergency contact 2" pattern="\d{10}" maxlength="10" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="emergency3">Emergency Contact 3</label>
+                    <input type="tel" id="emergency3" name="emergency3" placeholder="Emergency contact 3" pattern="\d{10}" maxlength="10" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" placeholder="Enter your password" minlength="8" required>
+                </div>
+
+                <button type="submit">Submit</button>
+
+                <div class="signup-link">
+                    <p> <a href="{{ url_for('login') }}">Already a User? Login!</a></p>
+                </div>
+            </form>
+        </div>
+    </body>
+</html>
