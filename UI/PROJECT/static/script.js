@@ -68,6 +68,7 @@ function sendLocationToServer(position) {
         headers: {
             'Content-Type': 'application/json'
         },
+        credentials: 'include', 
         body: JSON.stringify({ latitude: latitude, longitude: longitude })
     })
     .then(response => {
@@ -80,6 +81,26 @@ function sendLocationToServer(position) {
     })
     .then(data => {
         console.log('Location sent successfully:', data);
+        const popup = document.getElementById("popup");
+        const popupAddress = document.getElementById("popup-address");
+
+        if (data.address) {
+            popupAddress.textContent = data.address.split(",")[0]; // Show first line of address
+        } else {
+            popupAddress.textContent = "Address not found";
+        }
+
+        // Show the popup
+        popup.classList.add("show");
+        console.log("Location sent, showing popup."); // Debugging log
+
+        // Hide the popup after 15 seconds
+        setTimeout(() => {
+            popup.classList.add("hide");
+            setTimeout(() => {
+                popup.classList.remove("show", "hide");
+            }, 1200); // Match slideOut animation duration
+        }, 5000); // Popup display time
 
 
     })
@@ -154,23 +175,13 @@ async function stopRecording() {
             document.getElementById("status").innerText = "⚠️ Fear Detected!";
             document.getElementById("status").style.color = "red"; 
             getLocation();
-              // Show the popup
-              const popup = document.getElementById("popup");
-              popup.classList.add("show"); // Make the popup visible
-              console.log("Fear detected, showing popup.");  // Debugging log
-  
-              setTimeout(() => {
-                  popup.classList.add("hide"); // Hide after 15 seconds
-                  setTimeout(() => {
-                      popup.classList.remove("show", "hide"); // Reset the popup
-                  }, 1200); // Match slideOut animation duration
-              }, 15000); // Popup display time
+            
         } else {
             document.getElementById("status").innerText = "✅ No Fear Detected";
             document.getElementById("status").style.color = "green"; 
         }
 
-        // Reset chunks for next recording
-        audioChunks = [];
+        // Reset chunks for next recording                                                                                                                                                                                          
+        audioChunks = [];                                                                                                                                   
     };
 }

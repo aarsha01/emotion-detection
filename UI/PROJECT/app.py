@@ -11,8 +11,9 @@ from flask_cors import CORS
 from twilio.rest import Client
 
 app = Flask(__name__)
-CORS(app)
-# app.config['SECRET_KEY'] = 'a3f9b2c5d8e7a1f4c6d9e0b2a5d7c3f1' 
+CORS(app, supports_credentials=True, origins=["http://http://127.0.0.1:5000/"],  
+    methods=["GET", "POST"])
+app.config['SECRET_KEY'] = 'a3f9b2c5d8e7a1f4c6d9e0b2a5d7c3f1' 
 
 # Configure the database
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
@@ -24,7 +25,10 @@ if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
 
 
-app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER                                                                                                                     
+app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER 
+app.config['SESSION_COOKIE_SECURE'] = False
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SAMESITE'] = "Lax"                                                                                                                    
 # Create the database before the first request
 with app.app_context():
     db.create_all()
@@ -36,8 +40,8 @@ geolocator = Nominatim(user_agent="women_safety_app")
 
 # Twilio credentials (replace with your own)
 TWILIO_PHONE = '+12317512671'  # Your Twilio phone number
-# TWILIO_ACCOUNT_SID = 'AC43e2d9954c7ca8333a3715e8f0dac820'  # Your Twilio Account SID
-# TWILIO_AUTH_TOKEN = '35696f6f7e6daeb698300c3d009c5e29'   # Your Twilio Auth Token
+TWILIO_ACCOUNT_SID = 'AC43e2d9954c7ca8333a3715e8f0dac820'  # Your Twilio Account SID
+TWILIO_AUTH_TOKEN = '35696f6f7e6daeb698300c3d009c5e29'   # Your Twilio Auth Token
 
 # Predefined emergency contacts (use valid phone numbers)
 EMERGENCY_CONTACTS = ['+919037448078', '+918137042277']  # Example phone numbers
@@ -66,7 +70,13 @@ else:
     feature_extractor = AutoFeatureExtractor.from_pretrained(MODEL_PATH)
 id2label = model.config.id2label
 print("Model saved to:", MODEL_PATH)
-
+@app.after_request
+def add_cors_headers(response):
+    response.headers["Access-Control-Allow-Origin"] = "http://localhost:5000"
+    response.headers["Access-Control-Allow-Credentials"] = "true"
+    response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
+    response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
+    return response
 @app.route("/")
 def index():
     return render_template("login.html")
@@ -106,7 +116,8 @@ def signup():
     return render_template("signup.html")
 @app.route("/home")
 def home():
-    user_id = session.get("user_id")  # Get the logged-in user's ID
+    user_id = session.get("user_id")
+    print("Session Keys:", session.keys()) # Get the logged-in user's ID
     if not user_id:
         return redirect(url_for("login"))  # Redirect if not logged in
 
@@ -133,7 +144,9 @@ def login():
         user = User.query.filter_by(email=email, password=password).first()
         
         if user:
-            session["user_id"] = user.id  # Store user ID in session
+            session["user_id"] = user.id
+            session.modified = True 
+            print("Session after login:", dict(session))
             return redirect(url_for("home"))
         else:
             error_message = "Invalid username or password"
@@ -250,38 +263,55 @@ def upload_file():
         return jsonify({"message": predicted_emotion})
     print("FILE HAS SOME ISSUE")
     return jsonify({"error": "Invalid file format"}), 400
+
 @app.route('/send-location', methods=['POST'])
 def send_location():
     try:
+        # Debugging session data
+        print("Session Data:", dict(session))  # Debug entire session
+        print("Received Cookies:", request.cookies)  # Debug incoming cookies
+
         user_id = session.get("user_id")
         if not user_id:
-             return jsonify({"error": "User not logged in"}), 401 
-        # Fetch user details from the database
-        user = User.query.get(session["user_id"])
+            return jsonify({"error": "User not logged in"}), 401  
+    
+
+        # Fetch user details
+        user = User.query.get(user_id)
         if not user:
             return jsonify({"error": "User not found"}), 404
 
-            # Store emergency contacts in an array
+        print(f"User {user.name} is sending location")  # Debugging line
+        
+        # Extract emergency contacts (filter out empty values)
         emergency_contacts = [user.emergency1, user.emergency2, user.emergency3]
-        emergency_contacts = [contact for contact in emergency_contacts if contact]  # Remove empty contacts
-        print("eeeeee",emergency_contacts)
+        emergency_contacts = [contact for contact in emergency_contacts if contact]
+        
         if not emergency_contacts:
             return jsonify({"error": "No emergency contacts set"}), 400
-        # Get latitude and longitude from frontend
+        
+        # Get latitude and longitude from the frontend
         data = request.get_json()
         latitude = data.get('latitude')
         longitude = data.get('longitude')
 
+        if latitude is None or longitude is None:
+            return jsonify({"error": "Missing latitude or longitude"}), 400
+        
         # Reverse geocode to get the address
-        location = geolocator.reverse((latitude, longitude))
-        address = location.address if location else "Address not found"
+        try:
+            location = geolocator.reverse((latitude, longitude))
+            address = location.address if location else "Address not found"
+        except Exception as geo_error:
+            print(f"Geolocation Error: {geo_error}")
+            address = "Geolocation service unavailable"
 
-        # Create tracking link (you can use a real mapping API or just a placeholder)
+        # Create tracking link
         tracking_link = f"http://maps.google.com/?q={latitude},{longitude}"
-        print(address, latitude, longitude, tracking_link,emergency_contacts)
-
-        # Send the SMS with location and tracking link
-        # send_sms(address, latitude, longitude, tracking_link)
+        print(f"Location: {address}, Coordinates: {latitude}, {longitude}")
+        
+        # Send SMS to emergency contacts (Uncomment if needed)
+        # send_sms(address, latitude, longitude, tracking_link, emergency_contacts)
 
         return jsonify({
             "message": "Location sent to emergency contacts",
@@ -289,8 +319,11 @@ def send_location():
             "location": {"latitude": latitude, "longitude": longitude},
             "tracking_link": tracking_link
         })
+    
     except Exception as e:
+        print(f"Error in send-location: {e}")  # Print error for debugging
         return jsonify({"error": str(e)}), 500
+
 
 def send_sms(address, latitude, longitude, tracking_link,emergency_contacts):
     try:
