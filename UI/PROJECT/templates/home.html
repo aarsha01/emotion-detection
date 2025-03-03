@@ -5,7 +5,18 @@
                     <meta name="viewport" content="width=device-width, initial-scale=1.0">
                     <title>Her_Shield - Home</title>
                     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-                    <style>
+                    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='icons/favicon-32x32.png') }}">
+<link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='icons/favicon-16x16.png') }}">
+<link rel="manifest" href="/manifest.json">
+
+                    <script>
+                        if ("serviceWorker" in navigator) {
+                            navigator.serviceWorker.register("{{ url_for('static', filename='service-worker.js') }}")
+                                .then(reg => console.log("Service Worker Registered"))
+                                .catch(err => console.log("Service Worker Failed: ", err));
+                        }
+                    </script>
+                   <style>
                         body {
                             font-family: 'Comic Sans MS', cursive, sans-serif;
                             background-color: #ffeef7; /* Matching background color */
@@ -230,6 +241,34 @@
 }
                     </style>
                 </head>
+                <script>
+                    let deferredPrompt;
+                    window.addEventListener("beforeinstallprompt", (e) => {
+                        e.preventDefault();
+                        deferredPrompt = e;
+                        const installBtn = document.createElement("button");
+                        installBtn.textContent = "Install App";
+                        installBtn.style.position = "fixed";
+                        installBtn.style.bottom = "20px";
+                        installBtn.style.right = "20px";
+                        installBtn.style.background = "#ff6f91";
+                        installBtn.style.color = "white";
+                        installBtn.style.padding = "10px";
+                        installBtn.style.borderRadius = "8px";
+                        document.body.appendChild(installBtn);
+                
+                        installBtn.addEventListener("click", () => {
+                            deferredPrompt.prompt();
+                            deferredPrompt.userChoice.then((choice) => {
+                                if (choice.outcome === "accepted") {
+                                    console.log("User installed the app");
+                                }
+                                installBtn.remove();
+                            });
+                        });
+                    });
+                </script>
+                
                 <body>
                     <!-- Voice Status Indicator -->
     <div id="voice-status" style="position: fixed; bottom: 10px; left: 10px; background: #ff6f91; color: white; padding: 8px; border-radius: 5px; display: none;">
@@ -254,7 +293,10 @@
                         <div class="button-group">
                             <a href="{{ url_for('edit_details') }}" class="edit-btn">✏️ Edit Details</a>
                         </div>
-
+                        <div class="button-group">
+                            <a href="{{ url_for('alert_history') }}" class="edit-btn">📜 View Alert History</a>
+                        </div>
+                        
                         <!-- Toggle Switch -->
                         <div class="toggle-container">
                             <span class="toggle-label">Listen Mode</span>

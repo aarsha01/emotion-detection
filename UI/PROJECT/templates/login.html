@@ -3,7 +3,19 @@
     <head>
         <title>Her_Shield - Log In</title>
         <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&family=Roboto:wght@300&display=swap" rel="stylesheet">
-        <style>
+        
+        <link rel="manifest" href="/manifest.json">
+
+        <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='icons/favicon-32x32.png') }}">
+<link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='icons/favicon-16x16.png') }}">
+        <script>
+            if ("serviceWorker" in navigator) {
+                navigator.serviceWorker.register("{{ url_for('static', filename='service-worker.js') }}")
+                    .then(reg => console.log("Service Worker Registered"))
+                    .catch(err => console.log("Service Worker Failed: ", err));
+            }
+        </script>
+      <style>
             body {
                 font-family: 'Roboto', sans-serif;
                 background-color: #ffeef7;

@@ -4,6 +4,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>View Data</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='icons/favicon-32x32.png') }}">
+<link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='icons/favicon-16x16.png') }}">
+<link rel="manifest" href="/manifest.json">
+
+    <script>
+        if ("serviceWorker" in navigator) {
+            navigator.serviceWorker.register("{{ url_for('static', filename='service-worker.js') }}")
+                .then(reg => console.log("Service Worker Registered"))
+                .catch(err => console.log("Service Worker Failed: ", err));
+        }
+    </script>
 </head>
 <body>
     <h1>All Users</h1>

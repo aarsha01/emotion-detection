@@ -4,6 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Women Safety App</title>
+    <link rel="manifest" href="/manifest.json">
+
+<script>
+    if ("serviceWorker" in navigator) {
+        navigator.serviceWorker.register("{{ url_for('static', filename='service-worker.js') }}")
+            .then(reg => console.log("Service Worker Registered"))
+            .catch(err => console.log("Service Worker Failed: ", err));
+    }
+</script>
+
     <script>
         function getLocation() {
             if (navigator.geolocation) {
@@ -18,10 +28,11 @@
             const longitude = position.coords.longitude;
 
             // Send location to Flask backend
-            fetch('http://127.0.0.1:5000/send-location', {  // Adjust the URL if necessary
+            fetch('https://9f3f-2409-40f3-101c-744-3ce3-e57c-1454-e7f.ngrok-free.app/send-location', {  // Adjust the URL if necessary
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'ngrok-skip-browser-warning': 'true' 
                 },
                 body: JSON.stringify({ latitude: latitude, longitude: longitude })
             })

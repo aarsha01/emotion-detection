@@ -26,7 +26,7 @@ function startVoiceActivation() {
             }
         }
 
-        if (transcript.includes('stop recording')) {  // Custom stop recording command
+        if (transcript.includes('end recording')) {  // Custom stop recording command
             if (mediaRecorder && mediaRecorder.state === "recording") {
                 stopRecording().then(() => { // Ensure stopRecording finishes before toggling button
                     document.getElementById("status").innerText = "Recording stopped.";
@@ -63,10 +63,11 @@ function sendLocationToServer(position) {
     const longitude = position.coords.longitude;
     console.log(latitude,longitude)
     // Send location to Flask backend
-    fetch('http://127.0.0.1:5000/send-location', {  // Adjust the URL if necessary
+    fetch('https://9f3f-2409-40f3-101c-744-3ce3-e57c-1454-e7f.ngrok-free.app/send-location', {  // Adjust the URL if necessary
         method: 'POST',
         headers: {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'ngrok-skip-browser-warning': 'true' 
         },
         credentials: 'include', 
         body: JSON.stringify({ latitude: latitude, longitude: longitude })
@@ -185,3 +186,25 @@ async function stopRecording() {
         audioChunks = [];                                                                                                                                   
     };
 }
+function fetchAlertHistory() {
+    fetch('https://9f3f-2409-40f3-101c-744-3ce3-e57c-1454-e7f.ngrok-free.app/get-alert-history')
+        .then(response => response.json())
+        .then(data => {
+            console.log("Alert History:", data);
+            let historyContainer = document.getElementById("alert-history");
+            historyContainer.innerHTML = ""; // Clear old data
+
+            data.forEach(alert => {
+                let alertDiv = document.createElement("div");
+                alertDiv.classList.add("alert-item");
+                alertDiv.innerHTML = `
+           
+                `;
+                historyContainer.appendChild(alertDiv);
+            });
+        })
+        .catch(error => console.error("Error fetching alert history:", error));
+}
+
+// Call the function when the page loads
+document.addEventListener("DOMContentLoaded", fetchAlertHistory);

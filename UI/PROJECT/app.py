@@ -1,5 +1,5 @@
-from flask import Flask, render_template, request, redirect, url_for, jsonify, session,flash
-from models import db, User
+from flask import Flask, render_template, request, redirect, url_for, jsonify, session,flash,send_from_directory
+from models import db, User, Alert
 import os
 import torch
 import librosa
@@ -9,16 +9,21 @@ from pydub import AudioSegment
 from geopy.geocoders import Nominatim
 from flask_cors import CORS
 from twilio.rest import Client
-
+from collections import deque
+from datetime import datetime
+from flask_migrate import Migrate
 app = Flask(__name__)
-CORS(app, supports_credentials=True, origins=["http://http://127.0.0.1:5000/"],  
-    methods=["GET", "POST"])
+CORS(app, supports_credentials=True, origins=["http://127.0.0.1:5000/",
+                                              "https://9f3f-2409-40f3-101c-744-3ce3-e57c-1454-e7f.ngrok-free.app"],  
+    methods=["GET", "POST"],  allow_headers=["Content-Type", "Authorization", "ngrok-skip-browser-warning"])
 app.config['SECRET_KEY'] = 'a3f9b2c5d8e7a1f4c6d9e0b2a5d7c3f1' 
 
+alert_history_list = deque(maxlen=10)  # Store last 10 alerts
 # Configure the database
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db.init_app(app)
+migrate = Migrate(app, db) 
 ALLOWED_EXTENSIONS = {"wav", "mp3", "ogg", "m4a"}
 UPLOAD_FOLDER = "uploads"
 if not os.path.exists(UPLOAD_FOLDER):                                                                                                           
@@ -72,10 +77,9 @@ id2label = model.config.id2label
 print("Model saved to:", MODEL_PATH)
 @app.after_request
 def add_cors_headers(response):
-    response.headers["Access-Control-Allow-Origin"] = "http://localhost:5000"
+    response.headers["Access-Control-Allow-Origin"] = "https://9f3f-2409-40f3-101c-744-3ce3-e57c-1454-e7f.ngrok-free.app "
     response.headers["Access-Control-Allow-Credentials"] = "true"
     response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
-    response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
     return response
 @app.route("/")
 def index():
@@ -131,7 +135,9 @@ def home():
         print(f"Emergency Contacts: {user.emergency1}, {user.emergency2}, {user.emergency3}")
 
     return render_template("home.html", user=user)  # Pass user data to the frontend
-
+@app.route('/alert-history')
+def alert_history():
+    return render_template('alert_history.html')
 @app.route("/login", methods=["GET","POST"])
 def login():
     error_message= ""
@@ -267,51 +273,35 @@ def upload_file():
 @app.route('/send-location', methods=['POST'])
 def send_location():
     try:
-        # Debugging session data
-        print("Session Data:", dict(session))  # Debug entire session
-        print("Received Cookies:", request.cookies)  # Debug incoming cookies
-
         user_id = session.get("user_id")
         if not user_id:
             return jsonify({"error": "User not logged in"}), 401  
-    
 
-        # Fetch user details
         user = User.query.get(user_id)
         if not user:
             return jsonify({"error": "User not found"}), 404
 
-        print(f"User {user.name} is sending location")  # Debugging line
-        
-        # Extract emergency contacts (filter out empty values)
-        emergency_contacts = [user.emergency1, user.emergency2, user.emergency3]
-        emergency_contacts = [contact for contact in emergency_contacts if contact]
-        
-        if not emergency_contacts:
-            return jsonify({"error": "No emergency contacts set"}), 400
-        
-        # Get latitude and longitude from the frontend
         data = request.get_json()
         latitude = data.get('latitude')
         longitude = data.get('longitude')
 
         if latitude is None or longitude is None:
             return jsonify({"error": "Missing latitude or longitude"}), 400
-        
-        # Reverse geocode to get the address
+
+        # Get address from coordinates
         try:
-            location = geolocator.reverse((latitude, longitude))
-            address = location.address if location else "Address not found"
+            location = geolocator.reverse((latitude, longitude)) if latitude and longitude else None
+            address = location.address.split(",")[0] if location else "Address not found"
         except Exception as geo_error:
             print(f"Geolocation Error: {geo_error}")
             address = "Geolocation service unavailable"
 
-        # Create tracking link
+        # Save alert in database
+        new_alert = Alert(user_id=user.id, latitude=latitude, longitude=longitude, address=address, timestamp=datetime.now())
+        db.session.add(new_alert)
+        db.session.commit()
+
         tracking_link = f"http://maps.google.com/?q={latitude},{longitude}"
-        print(f"Location: {address}, Coordinates: {latitude}, {longitude}")
-        
-        # Send SMS to emergency contacts (Uncomment if needed)
-        # send_sms(address, latitude, longitude, tracking_link, emergency_contacts)
 
         return jsonify({
             "message": "Location sent to emergency contacts",
@@ -319,9 +309,9 @@ def send_location():
             "location": {"latitude": latitude, "longitude": longitude},
             "tracking_link": tracking_link
         })
-    
+
     except Exception as e:
-        print(f"Error in send-location: {e}")  # Print error for debugging
+        print(f"Error in send-location: {e}")
         return jsonify({"error": str(e)}), 500
 
 
@@ -351,6 +341,33 @@ def view_data():
 
     # Pass the data to the template
     return render_template("view_data.html", users=users)
+@app.route('/manifest.json')
+def manifest():
+    response = send_from_directory('static', 'manifest.json', mimetype='application/json')
+    response.headers['ngrok-skip-browser-warning'] = 'true'  # Bypass ngrok warning
+    return response
+@app.route('/get-alert-history', methods=['GET'])
+def get_alert_history():
+    user_id = session.get("user_id")
+    if not user_id:
+        return jsonify({"error": "User not logged in"}), 401  
 
+    # Get the last 10 alerts for the logged-in user
+    alerts = Alert.query.filter_by(user_id=user_id).order_by(Alert.timestamp.desc()).limit(10).all()
+
+    alert_list = []
+    for alert in alerts:
+        alert_list.append({
+            "latitude": alert.latitude,
+            "longitude": alert.longitude,
+            "address": alert.address,
+            "timestamp": alert.timestamp.strftime("%Y-%m-%d %H:%M:%S")
+        })
+
+    return jsonify(alert_list), 200
+
+@app.route('/service-worker.js')
+def service_worker():
+    return send_from_directory('static', 'service-worker.js', mimetype='application/javascript')
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(host="0.0.0.0", port=5000, debug=True)

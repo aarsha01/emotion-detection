@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alert History</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        body {
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            background-color: #ffeef7;
+            color: #d63384;
+            margin: 0;
+            padding: 0;
+            text-align: center;
+        }
+
+        .content {
+            background-color: white;
+            border-radius: 16px;
+            box-shadow: 0 8px 20px rgba(214, 51, 132, 0.3);
+            margin: 40px auto;
+            padding: 30px;
+            max-width: 600px;
+        }
+
+        .alert-item {
+            background: #ffdde4;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 10px rgba(214, 51, 132, 0.3);
+        }
+
+        .back-btn {
+            background-color: #ff6f91;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: bold;
+            transition: 0.3s;
+            display: inline-block;
+            margin-top: 20px;
+        }
+
+        .back-btn:hover {
+            background-color: #d63384;
+        }
+
+        @media (max-width: 600px) {
+            .content {
+                max-width: 90%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="content">
+        <h2>📜 Alert History (Last 10)</h2>
+        <div id="alert-history"></div>
+        <a href="{{ url_for('home') }}" class="back-btn">⬅️ Back to Home</a>
+    </div>
+
+    <script>
+        function fetchAlertHistory() {
+            fetch('{{ url_for("get_alert_history") }}')
+                .then(response => response.json())
+                .then(data => {
+                    let historyContainer = document.getElementById("alert-history");
+                    historyContainer.innerHTML = "";
+
+                    data.forEach(alert => {
+                        let alertDiv = document.createElement("div");
+                        alertDiv.classList.add("alert-item");
+                        alertDiv.innerHTML = `
+                            <p><strong>Location:</strong> ${alert.address}</p>
+                            <p><strong>GCS:</strong> ${alert.latitude}, ${alert.longitude}</p>
+                            <p><strong>Time:</strong> ${alert.timestamp}</p>
+                        `;
+                        historyContainer.appendChild(alertDiv);
+                    });
+                })
+                .catch(error => console.error("Error fetching alert history:", error));
+        }
+
+        document.addEventListener("DOMContentLoaded", fetchAlertHistory);
+    </script>
+</body>
+</html>

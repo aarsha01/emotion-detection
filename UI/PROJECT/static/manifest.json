@@ -1,0 +1,20 @@
+{
+  "name": "Her_Shield",
+  "short_name": "HerShield",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffeef7",
+  "theme_color": "#ff6f91",
+  "icons": [
+    {
+      "src": "/static/icons/android-chrome-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/static/icons/android-chrome-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
